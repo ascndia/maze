@@ -23,6 +23,7 @@ public class MazePanel extends JPanel {
     private javax.swing.Timer timer;
     private int step = 0;
     private int pathStep = 0;
+    private int animationDelay = 70; // milliseconds
 
     public MazePanel(int size) {
         this.model = new MazeModel(size);
@@ -63,7 +64,7 @@ public class MazePanel extends JPanel {
         step = 0;
         pathStep = 0;
         if (timer != null) timer.stop();
-        timer = new javax.swing.Timer(70, e -> {
+        timer = new javax.swing.Timer(animationDelay, e -> {
             if (result != null && step < result.visitOrder.size()) {
                 step++;
                 repaint();
@@ -77,6 +78,19 @@ public class MazePanel extends JPanel {
             ((javax.swing.Timer)e.getSource()).stop();
         });
         timer.start();
+    }
+
+    /**
+     * Set animation delay in milliseconds. If animation is running, updates timer delay.
+     */
+    public void setAnimationDelay(int ms) {
+        if (ms <= 0) return;
+        this.animationDelay = ms;
+        if (timer != null) timer.setDelay(ms);
+    }
+
+    public int getAnimationDelay() {
+        return animationDelay;
     }
 
     @Override
