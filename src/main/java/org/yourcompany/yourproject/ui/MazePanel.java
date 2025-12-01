@@ -1,6 +1,7 @@
 package org.yourcompany.yourproject.ui;
 
 import java.awt.AlphaComposite;
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.FontMetrics;
@@ -26,6 +27,11 @@ public class MazePanel extends JPanel {
     private int animationDelay = 70; // milliseconds
     private javax.swing.JLabel costLabel; // optional label to show total path cost
     private int gridSize;
+    private Result[] allResults = new Result[4]; // 0: BFS, 1: DFS, 2: Dijkstra, 3: A*
+    private int[] allCosts = new int[4];
+    private String[] algorithmNames = {"BFS", "DFS", "Dijkstra", "A*"};
+    private Color[] pathColors = {Color.BLUE, Color.GREEN, new Color(128,0,128), Color.ORANGE};
+    private boolean showAllPaths = false;
 
     public MazePanel(int size) {
         this.gridSize = size;
@@ -37,8 +43,12 @@ public class MazePanel extends JPanel {
         model = new MazeModel(gridSize);
         PrimMazeGenerator.generate(model);
         result = null;
+        allResults = new Result[4];
+        allCosts = new int[4];
+        java.util.Arrays.fill(allCosts, -1);
         step = 0;
         pathStep = 0;
+        showAllPaths = false;
         if (timer != null) timer.stop();
         if (costLabel != null) costLabel.setText("Cost: -");
         repaint();
@@ -54,28 +64,49 @@ public class MazePanel extends JPanel {
     }
 
     public void solveBFS() {
-        result = MazeSolver.solveBFS(model);
+        computeAllResults();
+        result = allResults[0];
         startAnimation();
     }
 
     public void solveDFS() {
-        result = MazeSolver.solveDFS(model);
+        computeAllResults();
+        result = allResults[1];
         startAnimation();
     }
 
     public void solveDijkstra() {
-        result = MazeSolver.dijkstra(model);
+        computeAllResults();
+        result = allResults[2];
         startAnimation();
     }
 
     public void solveAStar() {
-        result = MazeSolver.aStar(model);
+        computeAllResults();
+        result = allResults[3];
         startAnimation();
+    }
+
+    private void computeAllResults() {
+        allResults[0] = MazeSolver.solveBFS(model);
+        allResults[1] = MazeSolver.solveDFS(model);
+        allResults[2] = MazeSolver.dijkstra(model);
+        allResults[3] = MazeSolver.aStar(model);
+        for (int i = 0; i < 4; i++) {
+            if (allResults[i] != null && allResults[i].path != null) {
+                int total = 0;
+                for (Point p : allResults[i].path) total += model.getCost(p);
+                allCosts[i] = total;
+            } else {
+                allCosts[i] = -1;
+            }
+        }
     }
 
     private void startAnimation() {
         step = 0;
         pathStep = 0;
+        showAllPaths = false;
         if (timer != null) timer.stop();
         timer = new javax.swing.Timer(animationDelay, e -> {
             if (result != null && step < result.visitOrder.size()) {
@@ -83,22 +114,22 @@ public class MazePanel extends JPanel {
                 repaint();
                 return;
             }
-            if (result != null && result.path != null && pathStep < result.path.size()) {
-                pathStep++;
+            if (!showAllPaths) {
+                showAllPaths = true;
                 repaint();
+                ((javax.swing.Timer)e.getSource()).stop();
+                // update cost label
+                if (costLabel != null) {
+                    StringBuilder sb = new StringBuilder("Costs: ");
+                    for (int i = 0; i < 4; i++) {
+                        if (i > 0) sb.append(", ");
+                        sb.append(algorithmNames[i]).append(": ").append(allCosts[i] == -1 ? "-" : allCosts[i]);
+                    }
+                    costLabel.setText(sb.toString());
+                }
                 return;
             }
             ((javax.swing.Timer)e.getSource()).stop();
-            // update cost label when animation finished
-            if (costLabel != null) {
-                if (result != null && result.path != null) {
-                    int total = 0;
-                    for (java.awt.Point p : result.path) total += model.getCost(p);
-                    costLabel.setText("Cost: " + total);
-                } else {
-                    costLabel.setText("Cost: -");
-                }
-            }
         });
         timer.start();
     }
@@ -186,6 +217,25 @@ public class MazePanel extends JPanel {
                 int insetH = Math.max(2, cellH/6);
                 g2.fillRect(p.y*cellW+insetW, p.x*cellH+insetH, cellW-2*insetW, cellH-2*insetH);
             }
+        }
+        // draw all paths as lines if showAllPaths
+        if (showAllPaths) {
+            g2.setStroke(new BasicStroke(3));
+            for (int i = 0; i < 4; i++) {
+                if (allResults[i] != null && allResults[i].path != null) {
+                    g2.setColor(pathColors[i]);
+                    java.util.List<Point> path = allResults[i].path;
+                    for (int j = 0; j < path.size() - 1; j++) {
+                        Point p1 = path.get(j), p2 = path.get(j + 1);
+                        int x1 = p1.y * cellW + cellW / 2;
+                        int y1 = p1.x * cellH + cellH / 2;
+                        int x2 = p2.y * cellW + cellW / 2;
+                        int y2 = p2.x * cellH + cellH / 2;
+                        g2.drawLine(x1, y1, x2, y2);
+                    }
+                }
+            }
+            g2.setStroke(new BasicStroke(1)); // reset
         }
         // draw start and end as solid small boxes on top
         int insetW = Math.max(2, cellW/6);
