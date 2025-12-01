@@ -4,7 +4,6 @@ import java.awt.AlphaComposite;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
-import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
@@ -29,8 +28,8 @@ public class MazePanel extends JPanel {
     private int gridSize;
     private Result[] allResults = new Result[4]; // 0: BFS, 1: DFS, 2: Dijkstra, 3: A*
     private int[] allCosts = new int[4];
-    private String[] algorithmNames = {"BFS", "DFS", "Dijkstra", "A*"};
-    private Color[] pathColors = {Color.BLUE, Color.GREEN, new Color(128,0,128), Color.ORANGE};
+    private final String[] algorithmNames = {"BFS", "DFS", "Dijkstra", "A*"};
+    private final Color[] pathColors = {Color.BLUE, Color.GREEN, new Color(128,0,128), Color.ORANGE};
     private boolean showAllPaths = false;
 
     public MazePanel(int size) {
@@ -175,8 +174,10 @@ public class MazePanel extends JPanel {
                 g2.fillRect(j*cellW+1, i*cellH+1, cellW-2, cellH-2);
             }
         }
-        // draw walls (on top of terrain)
+        // draw walls (on top of terrain) with thicker stroke for clarity
         g2.setColor(Color.BLACK);
+        float wallWidth = Math.max(2f, Math.min(cellW, cellH) / 10f);
+        g2.setStroke(new BasicStroke(wallWidth, BasicStroke.CAP_SQUARE, BasicStroke.JOIN_MITER));
         // vertical walls
         for (int row = 0; row < N; row++) {
             for (int col = 0; col < N - 1; col++) {
@@ -199,6 +200,8 @@ public class MazePanel extends JPanel {
                 }
             }
         }
+        // reset stroke
+        g2.setStroke(new BasicStroke(1f));
         // draw visited in order as translucent overlay so terrain remains visible
         if (result != null && result.visitOrder != null) {
             int limit = Math.min(step, result.visitOrder.size());
@@ -226,19 +229,22 @@ public class MazePanel extends JPanel {
             }
             g2.setStroke(new BasicStroke(1)); // reset
         }
-        // draw all paths as lines if showAllPaths
+        // draw all paths as lines if showAllPaths (apply per-algorithm offset relative to cell size)
         if (showAllPaths) {
             g2.setStroke(new BasicStroke(2));
             for (int i = 0; i < 4; i++) {
                 if (allResults[i] != null && allResults[i].path != null) {
                     g2.setColor(pathColors[i]);
+                    // compute offsets proportional to cell size so lines in same tile separate visibly
+                    int offX = ((i & 1) == 0 ? -1 : 1) * Math.max(2, cellW / 4);
+                    int offY = (((i >> 1) & 1) == 0 ? -1 : 1) * Math.max(2, cellH / 4);
                     java.util.List<Point> path = allResults[i].path;
                     for (int j = 0; j < path.size() - 1; j++) {
                         Point p1 = path.get(j), p2 = path.get(j + 1);
-                        int x1 = p1.y * cellW + cellW / 2;
-                        int y1 = p1.x * cellH + cellH / 2;
-                        int x2 = p2.y * cellW + cellW / 2;
-                        int y2 = p2.x * cellH + cellH / 2;
+                        int x1 = p1.y * cellW + cellW / 2 + offX;
+                        int y1 = p1.x * cellH + cellH / 2 + offY;
+                        int x2 = p2.y * cellW + cellW / 2 + offX;
+                        int y2 = p2.x * cellH + cellH / 2 + offY;
                         g2.drawLine(x1, y1, x2, y2);
                     }
                 }
@@ -256,7 +262,6 @@ public class MazePanel extends JPanel {
         // legend (top-left)
         int lx = 8, ly = 8, sw = 14, sh = 12, gap = 6;
         g2.setFont(new Font("SansSerif", Font.PLAIN, 11));
-        FontMetrics fm = g2.getFontMetrics();
         // terrain legend
         g2.setColor(new Color(220, 255, 200)); g2.fillRect(lx, ly, sw, sh); g2.setColor(Color.BLACK); g2.drawRect(lx, ly, sw, sh); g2.drawString("Grass (1)", lx+sw+gap, ly+sh-3);
         g2.setColor(new Color(210, 180, 140)); g2.fillRect(lx, ly+sh+gap, sw, sh); g2.setColor(Color.BLACK); g2.drawRect(lx, ly+sh+gap, sw, sh); g2.drawString("Mud (5)", lx+sw+gap, ly+sh+gap+sh-3);
@@ -265,5 +270,16 @@ public class MazePanel extends JPanel {
         int oy = ly+3*(sh+gap)+4;
         g2.setColor(new Color(255,230,0,120)); g2.fillRect(lx, oy, sw, sh); g2.setColor(Color.BLACK); g2.drawRect(lx, oy, sw, sh); g2.drawString("Visited", lx+sw+gap, oy+sh-3);
         g2.setColor(new Color(220,20,60,200)); g2.fillRect(lx, oy+sh+gap, sw, sh); g2.setColor(Color.BLACK); g2.drawRect(lx, oy+sh+gap, sw, sh); g2.drawString("Path", lx+sw+gap, oy+sh+gap+sh-3);
+        // path legend for each algorithm lines
+        int algoY = oy + 2*(sh+gap) + 6;
+        for (int i = 0; i < algorithmNames.length; i++) {
+            int lineY = algoY + i*(sh + gap);
+            g2.setStroke(new BasicStroke(2));
+            g2.setColor(pathColors[i]);
+            g2.drawLine(lx, lineY + sh/2, lx + sw, lineY + sh/2);
+            g2.setStroke(new BasicStroke(1));
+            g2.setColor(Color.BLACK);
+            g2.drawString(algorithmNames[i] + " path", lx + sw + gap, lineY + sh - 2);
+        }
     }
 }
