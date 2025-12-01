@@ -15,6 +15,8 @@ public class PrimMazeGenerator {
     public static void generate(MazeModel model) {
         int N = model.getSize();
         model.initWalls();
+        // randomize terrain after creating walls (small chance of mud/water)
+        model.randomizeTerrain(0.10, 0.12); // pWater=0.10, pMud=0.12
         boolean[][] vis = new boolean[N][N];
         List<Wall> walls = new ArrayList<>();
         vis[0][0] = true;

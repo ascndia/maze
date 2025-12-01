@@ -22,7 +22,11 @@ public class Main {
             bfs.addActionListener(e -> panel.solveBFS());
             JButton dfs = new JButton("Solve DFS");
             dfs.addActionListener(e -> panel.solveDFS());
-            buttons.add(gen); buttons.add(bfs); buttons.add(dfs);
+            JButton dijk = new JButton("Dijkstra");
+            dijk.addActionListener(e -> panel.solveDijkstra());
+            JButton astar = new JButton("A*");
+            astar.addActionListener(e -> panel.solveAStar());
+            buttons.add(gen); buttons.add(bfs); buttons.add(dfs); buttons.add(dijk); buttons.add(astar);
             frame.add(buttons, BorderLayout.SOUTH);
             frame.setSize(560,560);
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);

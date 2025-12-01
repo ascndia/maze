@@ -2,6 +2,7 @@ package org.yourcompany.yourproject.model;
 
 import java.awt.Point;
 import java.util.ArrayList;
+import java.util.Random;
 
 public class MazeModel {
     private final int N;
@@ -9,6 +10,8 @@ public class MazeModel {
     public boolean[][] vWalls;
     // hWalls[row][col] is a horizontal wall between (row,col) and (row+1,col) -> size (N-1) x N
     public boolean[][] hWalls;
+    // terrain per cell
+    private Terrain[][] terrain;
     public Point start;
     public Point end;
 
@@ -32,6 +35,9 @@ public class MazeModel {
         for (int i = 0; i < N - 1; i++) {
             for (int j = 0; j < N; j++) hWalls[i][j] = true;
         }
+        // init terrain to GRASS by default
+        terrain = new Terrain[N][N];
+        for (int i = 0; i < N; i++) for (int j = 0; j < N; j++) terrain[i][j] = Terrain.GRASS;
     }
 
     public java.util.List<Point> neighbors(Point p) {
@@ -46,5 +52,18 @@ public class MazeModel {
         // down: check horizontal wall at hWalls[x][y]
         if (x < N - 1 && !hWalls[x][y]) res.add(new Point(x + 1, y));
         return res;
+    }
+
+    public Terrain getTerrain(Point p) { return terrain[p.x][p.y]; }
+    public int getCost(Point p) { return terrain[p.x][p.y].cost; }
+    public void setTerrain(int x, int y, Terrain t) { terrain[x][y] = t; }
+    public void randomizeTerrain(double pMud, double pWater) {
+        Random rnd = new Random();
+        for (int i = 0; i < N; i++) for (int j = 0; j < N; j++) {
+            double r = rnd.nextDouble();
+            if (r < pWater) terrain[i][j] = Terrain.WATER;
+            else if (r < pWater + pMud) terrain[i][j] = Terrain.MUD;
+            else terrain[i][j] = Terrain.GRASS;
+        }
     }
 }

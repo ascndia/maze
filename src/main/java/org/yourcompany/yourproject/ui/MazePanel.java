@@ -8,6 +8,7 @@ import javax.swing.JPanel;
 
 import org.yourcompany.yourproject.generator.PrimMazeGenerator;
 import org.yourcompany.yourproject.model.MazeModel;
+import org.yourcompany.yourproject.model.Terrain;
 import org.yourcompany.yourproject.solver.MazeSolver;
 import org.yourcompany.yourproject.solver.MazeSolver.Result;
 
@@ -43,6 +44,16 @@ public class MazePanel extends JPanel {
         startAnimation();
     }
 
+    public void solveDijkstra() {
+        result = MazeSolver.dijkstra(model);
+        startAnimation();
+    }
+
+    public void solveAStar() {
+        result = MazeSolver.aStar(model);
+        startAnimation();
+    }
+
     private void startAnimation() {
         step = 0;
         pathStep = 0;
@@ -69,8 +80,16 @@ public class MazePanel extends JPanel {
         int N = model.getSize();
         int cellW = getWidth() / N;
         int cellH = getHeight() / N;
-        g.setColor(Color.WHITE);
-        for (int i = 0; i < N; i++) for (int j = 0; j < N; j++) g.fillRect(j*cellW+1, i*cellH+1, cellW-2, cellH-2);
+        // draw terrain background per cell
+        for (int i = 0; i < N; i++) {
+            for (int j = 0; j < N; j++) {
+                Terrain t = model.getTerrain(new Point(i, j));
+                if (t == Terrain.GRASS) g.setColor(new Color(220, 255, 200));
+                else if (t == Terrain.MUD) g.setColor(new Color(210, 180, 140));
+                else g.setColor(new Color(180, 210, 255));
+                g.fillRect(j*cellW+1, i*cellH+1, cellW-2, cellH-2);
+            }
+        }
         g.setColor(Color.BLACK);
         // draw vertical walls (between left/right cells): vWalls[row][col] -> line at x = (col+1)*cellW
         g.setColor(Color.BLACK);

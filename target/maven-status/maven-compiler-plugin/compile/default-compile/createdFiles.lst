@@ -1,4 +1,5 @@
 org\yourcompany\yourproject\model\MazeModel.class
+org\yourcompany\yourproject\model\Terrain.class
 org\yourcompany\yourproject\Maze.class
 org\yourcompany\yourproject\solver\MazeSolver.class
 org\yourcompany\yourproject\Maze$Wall.class
