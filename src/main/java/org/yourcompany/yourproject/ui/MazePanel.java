@@ -114,6 +114,11 @@ public class MazePanel extends JPanel {
                 repaint();
                 return;
             }
+            if (result != null && result.path != null && pathStep < result.path.size()) {
+                pathStep++;
+                repaint();
+                return;
+            }
             if (!showAllPaths) {
                 showAllPaths = true;
                 repaint();
@@ -206,21 +211,24 @@ public class MazePanel extends JPanel {
             }
             g2.setComposite(AlphaComposite.SrcOver);
         }
-        // draw path progressively as a more opaque overlay but inset so terrain still shows
+        // draw path progressively as red line
         if (result != null && result.path != null && pathStep > 0) {
+            g2.setColor(Color.RED);
+            g2.setStroke(new BasicStroke(2));
             int limit = Math.min(pathStep, result.path.size());
-            Color pathCol = new Color(220, 20, 60, 200);
-            g2.setColor(pathCol);
-            for (int i = 0; i < limit; i++) {
-                Point p = result.path.get(i);
-                int insetW = Math.max(2, cellW/6);
-                int insetH = Math.max(2, cellH/6);
-                g2.fillRect(p.y*cellW+insetW, p.x*cellH+insetH, cellW-2*insetW, cellH-2*insetH);
+            for (int i = 0; i < limit - 1; i++) {
+                Point p1 = result.path.get(i), p2 = result.path.get(i + 1);
+                int x1 = p1.y * cellW + cellW / 2;
+                int y1 = p1.x * cellH + cellH / 2;
+                int x2 = p2.y * cellW + cellW / 2;
+                int y2 = p2.x * cellH + cellH / 2;
+                g2.drawLine(x1, y1, x2, y2);
             }
+            g2.setStroke(new BasicStroke(1)); // reset
         }
         // draw all paths as lines if showAllPaths
         if (showAllPaths) {
-            g2.setStroke(new BasicStroke(3));
+            g2.setStroke(new BasicStroke(2));
             for (int i = 0; i < 4; i++) {
                 if (allResults[i] != null && allResults[i].path != null) {
                     g2.setColor(pathColors[i]);
