@@ -51,6 +51,11 @@ public class Main {
             speedPanel.add(new JLabel("Slow"), java.awt.BorderLayout.EAST);
             buttons.add(speedPanel);
             buttons.add(speedLabel);
+
+            // Cost label (updated when path animation finishes)
+            JLabel costLabel = new JLabel("Cost: -");
+            panel.setCostLabel(costLabel);
+            buttons.add(costLabel);
             frame.add(buttons, BorderLayout.SOUTH);
             frame.setSize(560,560);
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);

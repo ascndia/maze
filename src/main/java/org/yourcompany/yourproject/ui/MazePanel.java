@@ -24,6 +24,7 @@ public class MazePanel extends JPanel {
     private int step = 0;
     private int pathStep = 0;
     private int animationDelay = 70; // milliseconds
+    private javax.swing.JLabel costLabel; // optional label to show total path cost
 
     public MazePanel(int size) {
         this.model = new MazeModel(size);
@@ -37,6 +38,7 @@ public class MazePanel extends JPanel {
         step = 0;
         pathStep = 0;
         if (timer != null) timer.stop();
+        if (costLabel != null) costLabel.setText("Cost: -");
         repaint();
     }
 
@@ -76,8 +78,23 @@ public class MazePanel extends JPanel {
                 return;
             }
             ((javax.swing.Timer)e.getSource()).stop();
+            // update cost label when animation finished
+            if (costLabel != null) {
+                if (result != null && result.path != null) {
+                    int total = 0;
+                    for (java.awt.Point p : result.path) total += model.getCost(p);
+                    costLabel.setText("Cost: " + total);
+                } else {
+                    costLabel.setText("Cost: -");
+                }
+            }
         });
         timer.start();
+    }
+
+    public void setCostLabel(javax.swing.JLabel label) {
+        this.costLabel = label;
+        if (label != null) label.setText("Cost: -");
     }
 
     /**
