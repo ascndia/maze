@@ -1,8 +1,13 @@
 package org.yourcompany.yourproject.ui;
 
+import java.awt.AlphaComposite;
 import java.awt.Color;
+import java.awt.Font;
+import java.awt.FontMetrics;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.Point;
+import java.awt.RenderingHints;
 
 import javax.swing.JPanel;
 
@@ -77,6 +82,8 @@ public class MazePanel extends JPanel {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
+        Graphics2D g2 = (Graphics2D) g;
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         int N = model.getSize();
         int cellW = getWidth() / N;
         int cellH = getHeight() / N;
@@ -84,58 +91,79 @@ public class MazePanel extends JPanel {
         for (int i = 0; i < N; i++) {
             for (int j = 0; j < N; j++) {
                 Terrain t = model.getTerrain(new Point(i, j));
-                if (t == Terrain.GRASS) g.setColor(new Color(220, 255, 200));
-                else if (t == Terrain.MUD) g.setColor(new Color(210, 180, 140));
-                else g.setColor(new Color(180, 210, 255));
-                g.fillRect(j*cellW+1, i*cellH+1, cellW-2, cellH-2);
+                if (t == Terrain.GRASS) g2.setColor(new Color(220, 255, 200));
+                else if (t == Terrain.MUD) g2.setColor(new Color(210, 180, 140));
+                else g2.setColor(new Color(180, 210, 255));
+                g2.fillRect(j*cellW+1, i*cellH+1, cellW-2, cellH-2);
             }
         }
-        g.setColor(Color.BLACK);
-        // draw vertical walls (between left/right cells): vWalls[row][col] -> line at x = (col+1)*cellW
-        g.setColor(Color.BLACK);
+        // draw walls (on top of terrain)
+        g2.setColor(Color.BLACK);
+        // vertical walls
         for (int row = 0; row < N; row++) {
             for (int col = 0; col < N - 1; col++) {
                 if (model.vWalls[row][col]) {
                     int x = (col + 1) * cellW;
                     int y1 = row * cellH;
                     int y2 = (row + 1) * cellH;
-                    g.drawLine(x, y1, x, y2);
+                    g2.drawLine(x, y1, x, y2);
                 }
             }
         }
-        // draw horizontal walls (between up/down cells): hWalls[row][col] -> line at y = (row+1)*cellH
+        // horizontal walls
         for (int row = 0; row < N - 1; row++) {
             for (int col = 0; col < N; col++) {
                 if (model.hWalls[row][col]) {
                     int y = (row + 1) * cellH;
                     int x1 = col * cellW;
                     int x2 = (col + 1) * cellW;
-                    g.drawLine(x1, y, x2, y);
+                    g2.drawLine(x1, y, x2, y);
                 }
             }
         }
-        // draw visited in order
+        // draw visited in order as translucent overlay so terrain remains visible
         if (result != null && result.visitOrder != null) {
-            g.setColor(Color.YELLOW);
             int limit = Math.min(step, result.visitOrder.size());
+            Color visitCol = new Color(255, 230, 0, 120);
+            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.6f));
+            g2.setColor(visitCol);
             for (int i = 0; i < limit; i++) {
                 Point p = result.visitOrder.get(i);
-                g.fillRect(p.y*cellW+1, p.x*cellH+1, cellW-2, cellH-2);
+                g2.fillRect(p.y*cellW+1, p.x*cellH+1, cellW-2, cellH-2);
             }
+            g2.setComposite(AlphaComposite.SrcOver);
         }
-        // draw path progressively
+        // draw path progressively as a more opaque overlay but inset so terrain still shows
         if (result != null && result.path != null && pathStep > 0) {
-            g.setColor(Color.RED);
             int limit = Math.min(pathStep, result.path.size());
+            Color pathCol = new Color(220, 20, 60, 200);
+            g2.setColor(pathCol);
             for (int i = 0; i < limit; i++) {
                 Point p = result.path.get(i);
-                g.fillRect(p.y*cellW+1, p.x*cellH+1, cellW-2, cellH-2);
+                int insetW = Math.max(2, cellW/6);
+                int insetH = Math.max(2, cellH/6);
+                g2.fillRect(p.y*cellW+insetW, p.x*cellH+insetH, cellW-2*insetW, cellH-2*insetH);
             }
         }
-        // start and end
-        g.setColor(Color.GREEN);
-        g.fillRect(model.start.y*cellW+1, model.start.x*cellH+1, cellW-2, cellH-2);
-        g.setColor(Color.BLUE);
-        g.fillRect(model.end.y*cellW+1, model.end.x*cellH+1, cellW-2, cellH-2);
+        // draw start and end as solid small boxes on top
+        int insetW = Math.max(2, cellW/6);
+        int insetH = Math.max(2, cellH/6);
+        g2.setColor(Color.GREEN);
+        g2.fillRect(model.start.y*cellW+insetW, model.start.x*cellH+insetH, cellW-2*insetW, cellH-2*insetH);
+        g2.setColor(Color.BLUE);
+        g2.fillRect(model.end.y*cellW+insetW, model.end.x*cellH+insetH, cellW-2*insetW, cellH-2*insetH);
+
+        // legend (top-left)
+        int lx = 8, ly = 8, sw = 14, sh = 12, gap = 6;
+        g2.setFont(new Font("SansSerif", Font.PLAIN, 11));
+        FontMetrics fm = g2.getFontMetrics();
+        // terrain legend
+        g2.setColor(new Color(220, 255, 200)); g2.fillRect(lx, ly, sw, sh); g2.setColor(Color.BLACK); g2.drawRect(lx, ly, sw, sh); g2.drawString("Grass (1)", lx+sw+gap, ly+sh-3);
+        g2.setColor(new Color(210, 180, 140)); g2.fillRect(lx, ly+sh+gap, sw, sh); g2.setColor(Color.BLACK); g2.drawRect(lx, ly+sh+gap, sw, sh); g2.drawString("Mud (5)", lx+sw+gap, ly+sh+gap+sh-3);
+        g2.setColor(new Color(180, 210, 255)); g2.fillRect(lx, ly+2*(sh+gap), sw, sh); g2.setColor(Color.BLACK); g2.drawRect(lx, ly+2*(sh+gap), sw, sh); g2.drawString("Water (10)", lx+sw+gap, ly+2*(sh+gap)+sh-3);
+        // overlays legend
+        int oy = ly+3*(sh+gap)+4;
+        g2.setColor(new Color(255,230,0,120)); g2.fillRect(lx, oy, sw, sh); g2.setColor(Color.BLACK); g2.drawRect(lx, oy, sw, sh); g2.drawString("Visited", lx+sw+gap, oy+sh-3);
+        g2.setColor(new Color(220,20,60,200)); g2.fillRect(lx, oy+sh+gap, sw, sh); g2.setColor(Color.BLACK); g2.drawRect(lx, oy+sh+gap, sw, sh); g2.drawString("Path", lx+sw+gap, oy+sh+gap+sh-3);
     }
 }
