@@ -31,22 +31,26 @@ public class Main {
             astar.addActionListener(e -> panel.solveAStar());
             buttons.add(gen); buttons.add(bfs); buttons.add(dfs); buttons.add(dijk); buttons.add(astar);
 
-            // Slider for animation speed (ms delay)
-            JLabel speedLabel = new JLabel("Speed: 70 ms");
+            // Slider for animation speed (ms delay) with Fast / Slow labels
+            JLabel speedLabel = new JLabel("70 ms");
             JSlider speedSlider = new JSlider(JSlider.HORIZONTAL, 10, 500, panel.getAnimationDelay());
-            speedSlider.setMajorTickSpacing(110);
-            speedSlider.setMinorTickSpacing(10);
-            speedSlider.setPaintTicks(true);
-            speedSlider.addChangeListener(new ChangeListener() {
+            speedSlider.setPaintTicks(false);
+            speedSlider.setPaintLabels(false);
+            speedSlider.setPreferredSize(new java.awt.Dimension(180, 24));
+            speedSlider.addChangeListener(new javax.swing.event.ChangeListener() {
                 @Override
-                public void stateChanged(ChangeEvent e) {
+                public void stateChanged(javax.swing.event.ChangeEvent e) {
                     int v = speedSlider.getValue();
                     panel.setAnimationDelay(v);
-                    speedLabel.setText("Speed: " + v + " ms");
+                    speedLabel.setText(v + " ms");
                 }
             });
+            JPanel speedPanel = new JPanel(new java.awt.BorderLayout(6, 0));
+            speedPanel.add(new JLabel("Fast"), java.awt.BorderLayout.WEST);
+            speedPanel.add(speedSlider, java.awt.BorderLayout.CENTER);
+            speedPanel.add(new JLabel("Slow"), java.awt.BorderLayout.EAST);
+            buttons.add(speedPanel);
             buttons.add(speedLabel);
-            buttons.add(speedSlider);
             frame.add(buttons, BorderLayout.SOUTH);
             frame.setSize(560,560);
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);

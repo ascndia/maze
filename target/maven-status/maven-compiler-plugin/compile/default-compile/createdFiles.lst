@@ -8,3 +8,4 @@ org\yourcompany\yourproject\solver\MazeSolver$Result.class
 org\yourcompany\yourproject\Main.class
 org\yourcompany\yourproject\ui\MazePanel.class
 org\yourcompany\yourproject\generator\PrimMazeGenerator$Wall.class
+org\yourcompany\yourproject\Main$1.class
