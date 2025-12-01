@@ -66,4 +66,32 @@ public class MazeModel {
             else terrain[i][j] = Terrain.GRASS;
         }
     }
+
+    /**
+     * Remove up to k random internal walls to create loops/shortcuts (make maze imperfect).
+     */
+    public void removeRandomWalls(int k) {
+        java.util.List<int[]> candidates = new java.util.ArrayList<>();
+        // encode as {type, row, col} where type: 0 = horizontal, 1 = vertical
+        for (int i = 0; i < N; i++) {
+            for (int j = 0; j < N - 1; j++) {
+                if (vWalls[i][j]) candidates.add(new int[] {1, i, j});
+            }
+        }
+        for (int i = 0; i < N - 1; i++) {
+            for (int j = 0; j < N; j++) {
+                if (hWalls[i][j]) candidates.add(new int[] {0, i, j});
+            }
+        }
+        java.util.Random rnd = new java.util.Random();
+        for (int removed = 0; removed < k && !candidates.isEmpty(); removed++) {
+            int idx = rnd.nextInt(candidates.size());
+            int[] c = candidates.remove(idx);
+            if (c[0] == 1) {
+                vWalls[c[1]][c[2]] = false;
+            } else {
+                hWalls[c[1]][c[2]] = false;
+            }
+        }
+    }
 }

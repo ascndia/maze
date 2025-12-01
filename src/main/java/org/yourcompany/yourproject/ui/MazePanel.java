@@ -38,9 +38,11 @@ public class MazePanel extends JPanel {
         PrimMazeGenerator.generate(model);
     }
 
-    public void generate() {
+    // generate maze and optionally add extra random openings (imperfect maze)
+    public void generate(int extraOpenings) {
         model = new MazeModel(gridSize);
         PrimMazeGenerator.generate(model);
+        if (extraOpenings > 0) model.removeRandomWalls(extraOpenings);
         result = null;
         allResults = new Result[4];
         allCosts = new int[4];
@@ -52,6 +54,9 @@ public class MazePanel extends JPanel {
         if (costLabel != null) costLabel.setText("Cost: -");
         repaint();
     }
+
+    // backward-compatible no-arg generate -> zero extra openings
+    public void generate() { generate(0); }
 
     public void setGridSize(int newSize) {
         if (newSize <= 1) return;

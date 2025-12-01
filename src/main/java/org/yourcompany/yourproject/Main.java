@@ -25,6 +25,10 @@ public class Main {
             JSpinner gridSizeSpinner = new JSpinner(new SpinnerNumberModel(panel.getGridSize(), 5, 80, 1));
             buttons.add(new JLabel("Grid:"));
             buttons.add(gridSizeSpinner);
+            // extra openings spinner (0 = perfect maze)
+            JSpinner extraOpenings = new JSpinner(new SpinnerNumberModel(0, 0, 200, 1));
+            buttons.add(new JLabel("Extra openings:"));
+            buttons.add(extraOpenings);
             JButton gen = new JButton("Generate");
             // when Generate is pressed, read spinner value and apply grid size before generating
             gen.addActionListener(e -> {
@@ -34,7 +38,12 @@ public class Main {
                 } catch (Exception ex) {
                     // ignore and use previous size
                 }
-                panel.generate();
+                try {
+                    int k = (Integer) extraOpenings.getValue();
+                    panel.generate(k);
+                } catch (Exception ex) {
+                    panel.generate();
+                }
             });
             JButton bfs = new JButton("Solve BFS");
             bfs.addActionListener(e -> panel.solveBFS());
