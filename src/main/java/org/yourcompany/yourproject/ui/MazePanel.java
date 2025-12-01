@@ -25,14 +25,16 @@ public class MazePanel extends JPanel {
     private int pathStep = 0;
     private int animationDelay = 70; // milliseconds
     private javax.swing.JLabel costLabel; // optional label to show total path cost
+    private int gridSize;
 
     public MazePanel(int size) {
+        this.gridSize = size;
         this.model = new MazeModel(size);
         PrimMazeGenerator.generate(model);
     }
 
     public void generate() {
-        model = new MazeModel(model.getSize());
+        model = new MazeModel(gridSize);
         PrimMazeGenerator.generate(model);
         result = null;
         step = 0;
@@ -40,6 +42,15 @@ public class MazePanel extends JPanel {
         if (timer != null) timer.stop();
         if (costLabel != null) costLabel.setText("Cost: -");
         repaint();
+    }
+
+    public void setGridSize(int newSize) {
+        if (newSize <= 1) return;
+        this.gridSize = newSize;
+    }
+
+    public int getGridSize() {
+        return this.gridSize;
     }
 
     public void solveBFS() {

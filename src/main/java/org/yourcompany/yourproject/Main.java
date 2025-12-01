@@ -6,6 +6,8 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JSlider;
 import javax.swing.JLabel;
+import javax.swing.JSpinner;
+import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
@@ -19,8 +21,21 @@ public class Main {
             MazePanel panel = new MazePanel(16);
             frame.add(panel, BorderLayout.CENTER);
             JPanel buttons = new JPanel();
+            // grid size control (applies when Generate pressed)
+            JSpinner gridSizeSpinner = new JSpinner(new SpinnerNumberModel(panel.getGridSize(), 5, 80, 1));
+            buttons.add(new JLabel("Grid:"));
+            buttons.add(gridSizeSpinner);
             JButton gen = new JButton("Generate");
-            gen.addActionListener(e -> panel.generate());
+            // when Generate is pressed, read spinner value and apply grid size before generating
+            gen.addActionListener(e -> {
+                try {
+                    int newSize = (Integer) gridSizeSpinner.getValue();
+                    panel.setGridSize(newSize);
+                } catch (Exception ex) {
+                    // ignore and use previous size
+                }
+                panel.generate();
+            });
             JButton bfs = new JButton("Solve BFS");
             bfs.addActionListener(e -> panel.solveBFS());
             JButton dfs = new JButton("Solve DFS");
