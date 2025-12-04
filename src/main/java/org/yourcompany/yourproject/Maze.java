@@ -8,6 +8,9 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Point;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -18,6 +21,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.Stack;
 
+import javax.imageio.ImageIO;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -38,8 +42,14 @@ public class Maze extends JPanel {
     private int step = 0;
     private java.util.List<Point> visitOrder; // ordered exploration list
     private int pathStep = 0; // how many path cells to reveal during animation
+    private BufferedImage ratImage;
 
     public Maze() {
+        try {
+            ratImage = ImageIO.read(new File("src/assets/image.png"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         generateMaze();
     }
 
@@ -267,6 +277,11 @@ public class Maze extends JPanel {
                 Point p = visitOrder.get(i);
                 g.fillRect(p.y * cellWidth + 1, p.x * cellHeight + 1, cellWidth - 2, cellHeight - 2);
             }
+            // Draw rat during exploration
+            if (ratImage != null && step > 0 && step <= visitOrder.size() && (path == null || pathStep == 0)) {
+                Point p = visitOrder.get(step - 1);
+                g.drawImage(ratImage, p.y * cellWidth + 1, p.x * cellHeight + 1, cellWidth - 2, cellHeight - 2, null);
+            }
         }
         // Draw path (red) progressively
         if (path != null && pathStep > 0) {
@@ -275,6 +290,11 @@ public class Maze extends JPanel {
             for (int i = 0; i < limit; i++) {
                 Point p = path.get(i);
                 g.fillRect(p.y * cellWidth + 1, p.x * cellHeight + 1, cellWidth - 2, cellHeight - 2);
+            }
+            // Draw rat during path traversal
+            if (ratImage != null && pathStep > 0 && pathStep <= path.size()) {
+                Point p = path.get(pathStep - 1);
+                g.drawImage(ratImage, p.y * cellWidth + 1, p.x * cellHeight + 1, cellWidth - 2, cellHeight - 2, null);
             }
         }
         // Draw start (green) and end (blue)

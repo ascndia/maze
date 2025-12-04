@@ -8,6 +8,10 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import javax.imageio.ImageIO;
 
 import javax.swing.JPanel;
 
@@ -31,10 +35,16 @@ public class MazePanel extends JPanel {
     private final String[] algorithmNames = {"BFS", "DFS", "Dijkstra", "A*"};
     private final Color[] pathColors = {Color.BLUE, Color.GREEN, new Color(128,0,128), Color.ORANGE};
     private boolean showAllPaths = false;
+    private BufferedImage ratImage;
 
     public MazePanel(int size) {
         this.gridSize = size;
         this.model = new MazeModel(size);
+        try {
+            ratImage = ImageIO.read(new File("src/assets/image.png"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         PrimMazeGenerator.generate(model);
     }
 
@@ -233,6 +243,14 @@ public class MazePanel extends JPanel {
                 g2.drawLine(x1, y1, x2, y2);
             }
             g2.setStroke(new BasicStroke(1)); // reset
+
+            // Draw rat at the head of the animating path
+            if (ratImage != null && pathStep <= result.path.size()) {
+                Point head = result.path.get(pathStep - 1);
+                int rx = head.y * cellW + 1;
+                int ry = head.x * cellH + 1;
+                g2.drawImage(ratImage, rx, ry, cellW - 2, cellH - 2, null);
+            }
         }
         // draw all paths as lines if showAllPaths (apply per-algorithm offset relative to cell size)
         if (showAllPaths) {
@@ -251,6 +269,17 @@ public class MazePanel extends JPanel {
                         int x2 = p2.y * cellW + cellW / 2 + offX;
                         int y2 = p2.x * cellH + cellH / 2 + offY;
                         g2.drawLine(x1, y1, x2, y2);
+                    }
+
+                    // Draw rat at the end of the path with offset
+                    if (ratImage != null && !path.isEmpty()) {
+                        Point endP = path.get(path.size() - 1);
+                        int cx = endP.y * cellW + cellW / 2;
+                        int cy = endP.x * cellH + cellH / 2;
+                        int drawX = cx + offX;
+                        int drawY = cy + offY;
+                        int ratSize = Math.min(cellW, cellH) / 2;
+                        g2.drawImage(ratImage, drawX - ratSize/2, drawY - ratSize/2, ratSize, ratSize, null);
                     }
                 }
             }
