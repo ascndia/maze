@@ -128,9 +128,9 @@ public class MazePanel extends JPanel {
                 java.util.List<Point> path = allResults[i].path;
                 if (raceProgress[i] < path.size() - 1) {
                     allDone = false;
-                    // Get cost of the *next* cell we are moving into
-                    Point next = path.get(raceProgress[i] + 1);
-                    int cost = model.getCost(next); // 1, 5, or 10
+                    // Get cost of the *current* cell we are traversing
+                    Point current = path.get(raceProgress[i]);
+                    int cost = model.getCost(current); // 1, 5, or 10
                     
                     // Required time = cost * animationDelay
                     int requiredTime = cost * animationDelay;
@@ -139,6 +139,9 @@ public class MazePanel extends JPanel {
                     if (raceAccumulatedTime[i] >= requiredTime) {
                         raceProgress[i]++;
                         raceAccumulatedTime[i] = 0;
+                        repaint();
+                    } else if (cost > 1) {
+                        // Force repaint for jitter effect on slow tiles
                         repaint();
                     }
                 }
@@ -299,6 +302,19 @@ public class MazePanel extends JPanel {
                         int cy = endP.x * cellH + cellH / 2;
                         int drawX = cx + offX;
                         int drawY = cy + offY;
+                        
+                        // Add jitter if racing and on high cost tile
+                        if (isRacing && !raceFinished) {
+                            int cost = model.getCost(endP);
+                            if (cost > 1) {
+                                int jitterRange = Math.max(1, Math.min(cellW, cellH) / 8);
+                                int jx = (int)(Math.random() * jitterRange * 2) - jitterRange;
+                                int jy = (int)(Math.random() * jitterRange * 2) - jitterRange;
+                                drawX += jx;
+                                drawY += jy;
+                            }
+                        }
+
                         int ratSize = Math.min(cellW, cellH) / 2;
                         g2.drawImage(ratImage, drawX - ratSize/2, drawY - ratSize/2, ratSize, ratSize, null);
                     }
