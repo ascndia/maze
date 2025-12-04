@@ -11,8 +11,8 @@ import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import javax.imageio.ImageIO;
 
+import javax.imageio.ImageIO;
 import javax.swing.JPanel;
 
 import org.yourcompany.yourproject.generator.PrimMazeGenerator;
@@ -36,6 +36,12 @@ public class MazePanel extends JPanel {
     private final Color[] pathColors = {Color.BLUE, Color.GREEN, new Color(128,0,128), Color.ORANGE};
     private boolean showAllPaths = false;
     private BufferedImage ratImage;
+    
+    // Race mode variables
+    private int[] raceProgress = new int[4];
+    private int[] raceAccumulatedTime = new int[4];
+    private boolean isRacing = false;
+    private boolean raceFinished = false;
 
     public MazePanel(int size) {
         this.gridSize = size;
@@ -60,6 +66,8 @@ public class MazePanel extends JPanel {
         step = 0;
         pathStep = 0;
         showAllPaths = false;
+        isRacing = false;
+        raceFinished = false;
         if (timer != null) timer.stop();
         if (costLabel != null) costLabel.setText("Cost: -");
         repaint();
@@ -77,31 +85,84 @@ public class MazePanel extends JPanel {
         return this.gridSize;
     }
 
-    public void solveBFS() {
-        computeAllResults();
-        result = allResults[0];
-        startAnimation();
+    public void solveBFS() { visualizeExploration(0); }
+    public void solveDFS() { visualizeExploration(1); }
+    public void solveDijkstra() { visualizeExploration(2); }
+    public void solveAStar() { visualizeExploration(3); }
+
+    private void visualizeExploration(int index) {
+        if (allResults[index] == null) return; // Should be computed by Run Race first
+        result = allResults[index];
+        isRacing = false;
+        showAllPaths = false;
+        step = 0;
+        pathStep = 0; // No path animation for individual buttons
+        if (timer != null) timer.stop();
+        timer = new javax.swing.Timer(animationDelay, e -> {
+            if (result != null && step < result.visitOrder.size()) {
+                step++;
+                repaint();
+            } else {
+                ((javax.swing.Timer)e.getSource()).stop();
+            }
+        });
+        timer.start();
     }
 
-    public void solveDFS() {
+    public void startRace() {
         computeAllResults();
-        result = allResults[1];
-        startAnimation();
+        isRacing = true;
+        showAllPaths = false;
+        raceFinished = false;
+        result = null; // Hide single exploration
+        java.util.Arrays.fill(raceProgress, 0);
+        java.util.Arrays.fill(raceAccumulatedTime, 0);
+        
+        if (timer != null) timer.stop();
+        // Use a fast timer tick for smooth accumulation
+        int tickRate = 10; 
+        timer = new javax.swing.Timer(tickRate, e -> {
+            boolean allDone = true;
+            for (int i = 0; i < 4; i++) {
+                if (allResults[i] == null || allResults[i].path == null) continue;
+                java.util.List<Point> path = allResults[i].path;
+                if (raceProgress[i] < path.size() - 1) {
+                    allDone = false;
+                    // Get cost of the *next* cell we are moving into
+                    Point next = path.get(raceProgress[i] + 1);
+                    int cost = model.getCost(next); // 1, 5, or 10
+                    
+                    // Required time = cost * animationDelay
+                    int requiredTime = cost * animationDelay;
+                    
+                    raceAccumulatedTime[i] += tickRate;
+                    if (raceAccumulatedTime[i] >= requiredTime) {
+                        raceProgress[i]++;
+                        raceAccumulatedTime[i] = 0;
+                        repaint();
+                    }
+                }
+            }
+            
+            if (allDone) {
+                ((javax.swing.Timer)e.getSource()).stop();
+                raceFinished = true;
+                showAllPaths = true; // Ensure final state is drawn fully
+                repaint();
+                updateCostLabel();
+            }
+        });
+        timer.start();
     }
 
-    public void solveDijkstra() {
-        computeAllResults();
-        result = allResults[2];
-        startAnimation();
-    }
-
-    public void solveAStar() {
-        computeAllResults();
-        result = allResults[3];
-        startAnimation();
+    public void replayRace() {
+        if (allResults[0] != null) {
+            startRace();
+        }
     }
 
     private void computeAllResults() {
+        if (allResults[0] != null) return; // Already computed
         allResults[0] = MazeSolver.solveBFS(model);
         allResults[1] = MazeSolver.solveDFS(model);
         allResults[2] = MazeSolver.dijkstra(model);
@@ -117,41 +178,19 @@ public class MazePanel extends JPanel {
         }
     }
 
-    private void startAnimation() {
-        step = 0;
-        pathStep = 0;
-        showAllPaths = false;
-        if (timer != null) timer.stop();
-        timer = new javax.swing.Timer(animationDelay, e -> {
-            if (result != null && step < result.visitOrder.size()) {
-                step++;
-                repaint();
-                return;
+    private void updateCostLabel() {
+        if (costLabel != null) {
+            StringBuilder sb = new StringBuilder("Costs: ");
+            for (int i = 0; i < 4; i++) {
+                if (i > 0) sb.append(", ");
+                sb.append(algorithmNames[i]).append(": ").append(allCosts[i] == -1 ? "-" : allCosts[i]);
             }
-            if (result != null && result.path != null && pathStep < result.path.size()) {
-                pathStep++;
-                repaint();
-                return;
-            }
-            if (!showAllPaths) {
-                showAllPaths = true;
-                repaint();
-                ((javax.swing.Timer)e.getSource()).stop();
-                // update cost label
-                if (costLabel != null) {
-                    StringBuilder sb = new StringBuilder("Costs: ");
-                    for (int i = 0; i < 4; i++) {
-                        if (i > 0) sb.append(", ");
-                        sb.append(algorithmNames[i]).append(": ").append(allCosts[i] == -1 ? "-" : allCosts[i]);
-                    }
-                    costLabel.setText(sb.toString());
-                }
-                return;
-            }
-            ((javax.swing.Timer)e.getSource()).stop();
-        });
-        timer.start();
+            costLabel.setText(sb.toString());
+        }
     }
+
+    // Old startAnimation removed/replaced
+    private void unused_startAnimation() {}
 
     public void setCostLabel(javax.swing.JLabel label) {
         this.costLabel = label;
@@ -229,31 +268,9 @@ public class MazePanel extends JPanel {
             }
             g2.setComposite(AlphaComposite.SrcOver);
         }
-        // draw path progressively as red line
-        if (result != null && result.path != null && pathStep > 0) {
-            g2.setColor(Color.RED);
-            g2.setStroke(new BasicStroke(2));
-            int limit = Math.min(pathStep, result.path.size());
-            for (int i = 0; i < limit - 1; i++) {
-                Point p1 = result.path.get(i), p2 = result.path.get(i + 1);
-                int x1 = p1.y * cellW + cellW / 2;
-                int y1 = p1.x * cellH + cellH / 2;
-                int x2 = p2.y * cellW + cellW / 2;
-                int y2 = p2.x * cellH + cellH / 2;
-                g2.drawLine(x1, y1, x2, y2);
-            }
-            g2.setStroke(new BasicStroke(1)); // reset
-
-            // Draw rat at the head of the animating path
-            if (ratImage != null && pathStep <= result.path.size()) {
-                Point head = result.path.get(pathStep - 1);
-                int rx = head.y * cellW + 1;
-                int ry = head.x * cellH + 1;
-                g2.drawImage(ratImage, rx, ry, cellW - 2, cellH - 2, null);
-            }
-        }
-        // draw all paths as lines if showAllPaths (apply per-algorithm offset relative to cell size)
-        if (showAllPaths) {
+        
+        // Draw paths (Race Mode or Final Result)
+        if (isRacing || showAllPaths) {
             g2.setStroke(new BasicStroke(2));
             for (int i = 0; i < 4; i++) {
                 if (allResults[i] != null && allResults[i].path != null) {
@@ -262,7 +279,11 @@ public class MazePanel extends JPanel {
                     int offX = ((i & 1) == 0 ? -1 : 1) * Math.max(2, cellW / 4);
                     int offY = (((i >> 1) & 1) == 0 ? -1 : 1) * Math.max(2, cellH / 4);
                     java.util.List<Point> path = allResults[i].path;
-                    for (int j = 0; j < path.size() - 1; j++) {
+                    
+                    // Determine how much of the path to draw
+                    int limit = showAllPaths ? path.size() : Math.min(raceProgress[i] + 1, path.size());
+                    
+                    for (int j = 0; j < limit - 1; j++) {
                         Point p1 = path.get(j), p2 = path.get(j + 1);
                         int x1 = p1.y * cellW + cellW / 2 + offX;
                         int y1 = p1.x * cellH + cellH / 2 + offY;
@@ -271,9 +292,9 @@ public class MazePanel extends JPanel {
                         g2.drawLine(x1, y1, x2, y2);
                     }
 
-                    // Draw rat at the end of the path with offset
-                    if (ratImage != null && !path.isEmpty()) {
-                        Point endP = path.get(path.size() - 1);
+                    // Draw rat at the current head of the path
+                    if (ratImage != null && limit > 0) {
+                        Point endP = path.get(limit - 1);
                         int cx = endP.y * cellW + cellW / 2;
                         int cy = endP.x * cellH + cellH / 2;
                         int drawX = cx + offX;

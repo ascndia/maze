@@ -29,31 +29,64 @@ public class Main {
             JSpinner extraOpenings = new JSpinner(new SpinnerNumberModel(0, 0, 200, 1));
             buttons.add(new JLabel("Extra openings:"));
             buttons.add(extraOpenings);
+
             JButton gen = new JButton("Generate");
-            // when Generate is pressed, read spinner value and apply grid size before generating
+            JButton runRace = new JButton("Run Race");
+            JButton replay = new JButton("Replay");
+            JButton bfs = new JButton("Solve BFS");
+            JButton dfs = new JButton("Solve DFS");
+            JButton dijk = new JButton("Dijkstra");
+            JButton astar = new JButton("A*");
+
+            // Configure initial states
+            replay.setEnabled(false);
+            bfs.setEnabled(false);
+            dfs.setEnabled(false);
+            dijk.setEnabled(false);
+            astar.setEnabled(false);
+
+            // Add listeners
             gen.addActionListener(e -> {
                 try {
                     int newSize = (Integer) gridSizeSpinner.getValue();
                     panel.setGridSize(newSize);
-                } catch (Exception ex) {
-                    // ignore and use previous size
-                }
+                } catch (Exception ex) {}
                 try {
                     int k = (Integer) extraOpenings.getValue();
                     panel.generate(k);
                 } catch (Exception ex) {
                     panel.generate();
                 }
+                bfs.setEnabled(false);
+                dfs.setEnabled(false);
+                dijk.setEnabled(false);
+                astar.setEnabled(false);
+                replay.setEnabled(false);
             });
-            JButton bfs = new JButton("Solve BFS");
+
+            runRace.addActionListener(e -> {
+                panel.startRace();
+                bfs.setEnabled(true);
+                dfs.setEnabled(true);
+                dijk.setEnabled(true);
+                astar.setEnabled(true);
+                replay.setEnabled(true);
+            });
+
+            replay.addActionListener(e -> panel.replayRace());
             bfs.addActionListener(e -> panel.solveBFS());
-            JButton dfs = new JButton("Solve DFS");
             dfs.addActionListener(e -> panel.solveDFS());
-            JButton dijk = new JButton("Dijkstra");
             dijk.addActionListener(e -> panel.solveDijkstra());
-            JButton astar = new JButton("A*");
             astar.addActionListener(e -> panel.solveAStar());
-            buttons.add(gen); buttons.add(bfs); buttons.add(dfs); buttons.add(dijk); buttons.add(astar);
+
+            // Add buttons in logical order
+            buttons.add(gen); 
+            buttons.add(runRace);
+            buttons.add(replay);
+            buttons.add(bfs); 
+            buttons.add(dfs); 
+            buttons.add(dijk); 
+            buttons.add(astar);
 
             // Slider for animation speed (ms delay) with Fast / Slow labels
             JLabel speedLabel = new JLabel("70 ms");
